@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Coastal Calm -->
+    <!-- Application Structure Plan: The SPA is a linear, single-problem challenge game designed to reduce cognitive load by presenting one question at a time. The user starts with a clear instruction screen, then proceeds through a series of problems covering different topics. The flow is guided and sequential, with a progress tracker to maintain engagement. This structure was chosen to provide a focused, step-by-step learning environment that prevents students from feeling overwhelmed by a full worksheet of problems at once. -->
+    <!-- Visualization & Content Choices: Report Info: A set of problems covering GCF, LCM, and fraction operations. Goal: Provide interactive practice and instant feedback. Presentation Method: The problems are displayed sequentially, using custom CSS for legible fraction formatting. GCF/LCM problems use a simple text display. Interaction: Users input answers into a single number field (for GCF/LCM) or multiple fields (for fractions), and click a "Check" button. Instant visual feedback is provided. The game state and problem type determine which input fields are visible, simplifying the UI for each problem. Justification: This interactive format transforms a static exercise into an engaging game. The structured input fields prevent common formatting errors, and immediate feedback is crucial for reinforcing correct learning. Library/Method: Vanilla JS for all game logic, state management, and DOM manipulation. Tailwind CSS for a clean, responsive layout. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            text-align: center;
+            vertical-align: middle;
+            margin: 0 0.25em;
+        }
+        .fraction-numerator {
+            border-bottom: 2px solid currentColor;
+            padding: 0 0.2em;
+        }
+        .fraction-denominator {
+            padding: 0 0.2em;
+        }
+        .whole-number {
+            font-size: 1.5rem;
+            line-height: 2rem;
+            margin-right: 0.2rem;
+        }
+        .problem-text-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            font-size: 1.5rem;
+            line-height: 2rem;
+            min-height: 4rem;
+        }
+        .progress-dot {
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 9999px;
+            transition: background-color 0.3s ease-in-out;
+        }
+        .input-num {
+            width: 10rem;
+            height: 4rem;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="game-container" class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div id="start-screen" class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 md:p-12 text-center transition-all duration-500">
+            <h1 class="text-4xl md:text-5xl font-bold text-sky-800 mb-4">Math Challenge</h1>
+            <p class="text-gray-600 mb-6 text-lg">Test your skills in GCF, LCM, and adding and subtracting fractions!</p>
+            <button id="start-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors duration-300 text-lg shadow-md">Start Game</button>
+        </div>
+
+        <div id="game-screen" class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 md:p-8 text-center transition-all duration-500 hidden">
+            
+            <header class="mb-6">
+                <h2 id="problem-topic" class="text-2xl font-semibold text-gray-700"></h2>
+                <p id="instructions" class="text-gray-500 mt-2 text-base"></p>
+            </header>
+
+            <main>
+                <div id="problem-container" class="min-h-[12rem] flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg mb-6">
+                    <div id="problem-text" class="problem-text-container text-2xl font-medium text-gray-900"></div>
+                </div>
+
+                <div id="answer-section" class="mb-4 flex flex-col items-center">
+                    <p id="answer-prompt" class="text-gray-600 mb-3 text-lg">Your Answer:</p>
+                    <div id="input-container" class="input-group flex items-center justify-center gap-2">
+                        <input id="ans-whole" type="number" min="0" placeholder="0" class="w-20 h-12 text-xl text-center rounded-lg border border-gray-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                        <div class="fraction-input flex flex-col">
+                            <input id="ans-num" type="number" min="0" placeholder="num" class="w-20 h-12 text-xl text-center rounded-lg border border-gray-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                            <div class="h-1 bg-gray-800 w-20 my-1"></div>
+                            <input id="ans-den" type="number" min="1" placeholder="den" class="w-20 h-12 text-xl text-center rounded-lg border border-gray-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                        </div>
+                        <input id="ans-gcf-lcm" type="number" placeholder="Enter here" class="input-num h-12 text-xl text-center rounded-lg border border-gray-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 hidden">
+                    </div>
+                </div>
+                
+                <div id="feedback-container" class="min-h-[2.5rem] mb-6 flex items-center justify-center">
+                    <p id="feedback-text" class="text-xl font-medium"></p>
+                </div>
+
+                <div id="button-container" class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <button id="check-btn" class="w-full sm:w-auto bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors duration-300 text-lg shadow-md">Check Answer</button>
+                    <button id="next-btn" class="w-full sm:w-auto bg-gray-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-gray-700 transition-colors duration-300 text-lg shadow-md hidden">Next Problem</button>
+                </div>
+            </main>
+
+            <footer class="mt-8">
+                <div id="progress-tracker" class="flex justify-center items-center gap-2"></div>
+            </footer>
+        </div>
+
+        <div id="end-screen" class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 md:p-12 text-center transition-all duration-500 hidden">
+            <div class="text-6xl mb-4">🎉</div>
+            <h2 class="text-3xl font-bold text-sky-600 mb-2">Challenge Complete!</h2>
+            <p id="final-score" class="text-gray-600 text-lg mb-6">Your Score: 0/12</p>
+            <button id="restart-btn" class="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-700 transition-colors duration-300 text-lg shadow-md">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const problems = [
+            { type: 'gcf', question: "What is the greatest common factor of 12 and 18?", a: 6 },
+            { type: 'addMixed', p: [{w:1, n:1, d:2}, {op:'+'}, {w:2, n:1, d:4}], a: {w:3, n:3, d:4}},
+            { type: 'lcm', question: "What is the least common multiple of 4 and 6?", a: 12 },
+            { type: 'subtractMixed', p: [{w:5, n:1, d:4}, {op:'-'}, {w:2, n:1, d:2}], a: {w:2, n:3, d:4}},
+            { type: 'addFraction', p: [{w:0, n:2, d:3}, {op:'+'}, {w:0, n:1, d:6}], a: {w:0, n:5, d:6}},
+            { type: 'gcf', question: "What is the greatest common factor of 24 and 36?", a: 12 },
+            { type: 'subtractFraction', p: [{w:0, n:3, d:4}, {op:'-'}, {w:0, n:1, d:8}], a: {w:0, n:5, d:8}},
+            { type: 'lcm', question: "What is the least common multiple of 8 and 12?", a: 24 },
+            { type: 'subtractMixed', p: [{w:8, n:1, d:5}, {op:'-'}, {w:3, n:7, d:10}], a: {w:4, n:4, d:10}},
+            { type: 'addMixed', p: [{w:3, n:1, d:6}, {op:'+'}, {w:1, n:1, d:3}], a: {w:4, n:3, d:6}},
+            { type: 'addFraction', p: [{w:0, n:1, d:2}, {op:'+'}, {w:0, n:1, d:3}], a: {w:0, n:5, d:6}},
+            { type: 'subtractMixed', p: [{w:10, n:1, d:3}, {op:'-'}, {w:7, n:3, d:4}], a: {w:2, n:7, d:12}}
+        ];
+        let currentProblemIndex = 0;
+        let score = 0;
+
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const problemTopicEl = document.getElementById('problem-topic');
+        const problemTextEl = document.getElementById('problem-text');
+        const ansWholeEl = document.getElementById('ans-whole');
+        const ansNumEl = document.getElementById('ans-num');
+        const ansDenEl = document.getElementById('ans-den');
+        const ansGcfLcmEl = document.getElementById('ans-gcf-lcm');
+        const checkBtn = document.getElementById('check-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const feedbackTextEl = document.getElementById('feedback-text');
+        const progressTrackerEl = document.getElementById('progress-tracker');
+        const finalScoreEl = document.getElementById('final-score');
+        const fractionInputs = document.querySelector('.fraction-input');
+
+        function createFractionHTML(n, d) {
+            return `<div class="fraction"><span class="fraction-numerator">${n}</span><span class="fraction-denominator">${d}</span></div>`;
+        }
+
+        function createProblemHTML(parts) {
+            return parts.map(part => {
+                if (part.op) return `<span class="px-2">${part.op}</span>`;
+                let html = '';
+                if (part.w > 0) {
+                    html += `<span class="whole-number">${part.w}</span>`;
+                }
+                if (part.n > 0) {
+                    html += createFractionHTML(part.n, part.d);
+                }
+                return html;
+            }).join('');
+        }
+
+        function displayProblem(index) {
+            const problem = problems[index];
+            problemTextEl.innerHTML = '';
+            ansWholeEl.classList.add('hidden');
+            fractionInputs.classList.add('hidden');
+            ansGcfLcmEl.classList.add('hidden');
+
+            if (problem.type.includes('Fraction') || problem.type.includes('Mixed')) {
+                ansWholeEl.classList.remove('hidden');
+                fractionInputs.classList.remove('hidden');
+                problemTopicEl.textContent = problem.type === 'addFraction' ? 'Adding Fractions' : problem.type === 'subtractFraction' ? 'Subtracting Fractions' : problem.type === 'addMixed' ? 'Adding Mixed Numbers' : 'Subtracting Mixed Numbers';
+                problemTextEl.innerHTML = createProblemHTML(problem.p);
+            } else {
+                ansGcfLcmEl.classList.remove('hidden');
+                problemTopicEl.textContent = problem.type === 'gcf' ? 'Greatest Common Factor' : 'Least Common Multiple';
+                problemTextEl.textContent = problem.question;
+            }
+        }
+
+        function clearInputs() {
+            ansWholeEl.value = '';
+            ansNumEl.value = '';
+            ansDenEl.value = '';
+            ansGcfLcmEl.value = '';
+            feedbackTextEl.textContent = '';
+            feedbackTextEl.className = 'text-xl font-medium';
+        }
+
+        function updateProgressTracker() {
+            progressTrackerEl.innerHTML = '';
+            for (let i = 0; i < problems.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot';
+                if (i < currentProblemIndex) {
+                    dot.classList.add('bg-sky-500');
+                } else {
+                    dot.classList.add('bg-gray-300');
+                }
+                progressTrackerEl.appendChild(dot);
+            }
+        }
+        
+        function getGCD(a, b) {
+            return b === 0 ? a : getGCD(b, a % b);
+        }
+
+        function simplify(num, den) {
+            const common = getGCD(Math.abs(num), Math.abs(den));
+            return { n: num / common, d: den / common };
+        }
+
+        function checkAnswer() {
+            const problem = problems[currentProblemIndex];
+            let isCorrect = false;
+
+            if (problem.type.includes('Fraction') || problem.type.includes('Mixed')) {
+                const whole = parseInt(ansWholeEl.value) || 0;
+                const num = parseInt(ansNumEl.value) || 0;
+                const den = parseInt(ansDenEl.value) || 1;
+                const studentAnswerSimple = simplify(num, den);
+                const correctAnswerSimple = simplify(problem.a.n, problem.a.d);
+                isCorrect = (whole === problem.a.w && studentAnswerSimple.n === correctAnswerSimple.n && studentAnswerSimple.d === correctAnswerSimple.d);
+            } else {
+                const studentAnswer = parseInt(ansGcfLcmEl.value);
+                isCorrect = studentAnswer === problem.a;
+            }
+
+            if (isCorrect) {
+                feedbackTextEl.textContent = "Correct! Great job!";
+                feedbackTextEl.className = 'text-xl font-medium text-green-600';
+                score++;
+                checkBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+            } else {
+                feedbackTextEl.textContent = "Not quite, try again!";
+                feedbackTextEl.className = 'text-xl font-medium text-red-500';
+            }
+        }
+
+        function nextProblem() {
+            currentProblemIndex++;
+            updateProgressTracker();
+
+            if (currentProblemIndex < problems.length) {
+                displayProblem(currentProblemIndex);
+                clearInputs();
+                checkBtn.classList.remove('hidden');
+                nextBtn.classList.add('hidden');
+            } else {
+                gameScreen.classList.add('hidden');
+                endScreen.classList.remove('hidden');
+                finalScoreEl.textContent = `Your Score: ${score}/${problems.length}`;
+            }
+        }
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function startGame() {
+            shuffleArray(problems);
+            currentProblemIndex = 0;
+            score = 0;
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            endScreen.classList.add('hidden');
+            displayProblem(currentProblemIndex);
+            clearInputs();
+            updateProgressTracker();
+            checkBtn.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+        }
+
+        startBtn.addEventListener('click', startGame);
+        checkBtn.addEventListener('click', checkAnswer);
+        nextBtn.addEventListener('click', nextProblem);
+        restartBtn.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
